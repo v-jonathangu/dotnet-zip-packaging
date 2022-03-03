@@ -40,4 +40,18 @@ then build and pusblish the profile like this
 `MSBuild.exe .\aspdotnet-zip.sln /p:Configuration=Release /p:Platform="Any CPU" /property:DeployOnBuild=True /p:PublishProfile=FolderProfile`
 
 > with dotnet cli tool you can do it like this:
-`dotnet publish -p:PublishProfile=FolderProfile`
+`dotnet publish -c Release -p:PublishProfile=FolderProfile`
+
+> please keep in mind that the directory output and contents might change depending on the SDK and MSBuild tools installed, for example MSBuild might output on a different directory than the dotnet sdk, and the sdk might change the files generated depending of the SDK for example SDK 4 is different than SDK 6. 
+
+> Also it is not recommended do any extra manual packaging steps via MSBuild, if you need for example zip the project or create an executable with redistributables you should use another tool like an powershell script or a pipeline job/task in your environment, for example in powershell you can zip a directory like this
+```powershell
+$compress = @{
+  # the directory where you release files are
+  Path = "release-web/*"
+  CompressionLevel = "Fastest"
+  # the file output directory 
+  DestinationPath = "release.zip"
+}
+Compress-Archive @compress -Force
+```
