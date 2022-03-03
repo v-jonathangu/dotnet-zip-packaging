@@ -1,0 +1,103 @@
+# ASP.NET
+# Build and test ASP.NET projects.
+# Add steps that publish symbols, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
+
+trigger:
+- main
+
+pool:
+  # for windows agent
+  #vmImage: 'windows-latest'
+  vmImage: 'ubuntu-latest'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  # for windows
+  #releasepath: '$(System.DefaultWorkingDirectory)/release-web'
+  # for linux with dotnet CLI
+  applicationName: webapp
+  dotnetRuntime: net6.0
+  # change this to your generated release directory
+  releasepath: '$(System.DefaultWorkingDirectory)/$(applicationName)/bin/Release/$(dotnetRuntime)'
+  # change this to where you want to store your build directory
+  zipdirectory: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId)/'
+  # change this to your project name
+  appname: webapp
+
+steps:
+
+# uncomment these tasks if you are using windows and not .net cli
+#- task: NuGetToolInstaller@1
+#- task: NuGetCommand@2
+#  inputs:
+#    restoreSolution: '$(solution)'
+
+# for Windows you can use msbuild
+#- task: VSBuild@1
+#  inputs:
+#    solution: '$(solution)'
+#    # with publishing profile
+#    msBuildArgs: '/p:DeployOnBuild=True /p:Configuration=Release /p:Platform="Any CPU"  /p:PublishProfile=FolderProfile'
+#    #default build args 
+#    #msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
+#    platform: '$(buildPlatform)'
+#    configuration: '$(buildConfiguration)'
+
+#- task: VSTest@2
+#  inputs:
+#    platform: '$(buildPlatform)'
+#    configuration: '$(buildConfiguration)'
+
+# use this task if your release comes in a directory or you did not package it before
+#- task: ArchiveFiles@2
+#  inputs:
+#    rootFolderOrFile: '$(releasepath)'
+#    includeRootFolder: true
+#    archiveType: 'zip'
+#    archiveFile: '$(zipdirectory)/release.zip'
+#    replaceExistingArchive: true
+
+# comment these tasks if your are not using .net cli
+# restore the packages
+- task: DotNetCoreCLI@2
+  displayName: DotNet Restore
+  inputs:
+    command: 'restore'
+    feedsToUse: 'select'
+
+# comment this if you don´t need unit testing
+- task: DotNetCoreCLI@2
+  displayName: Run Unit Tests
+  inputs:
+    command: 'test'
+
+# build and publish the project
+- task: DotNetCoreCLI@2
+  displayName: DotNet Publish
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
+    arguments: '-c Release -p:PublishProfile=FolderProfile -o $(zipdirectory)'
+    # we can zip the project and it will be inside release.zip instead 
+    zipAfterPublish: true
+
+# your zip file will be on $(zipdirectory)/$(appname).zip
+
+# example deployment to App Service
+# change the following parameters or set them up as non secret variables
+# azureSubscription, WebAppName, ResourceGroupName
+- task: AzureRmWebAppDeployment@4
+  displayName: Deploy to App Service
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: $(AzureSubscription)
+    appType: 'webAppLinux'
+    WebAppName: $(WebAppName)
+    deployToSlotOrASE: true
+    ResourceGroupName: $(ResourceGroupName)
+    SlotName: 'production'
+    packageForLinux: '$(zipdirectory)/$(appname).zip'
+    RuntimeStack: 'DOTNETCORE|6.0'
