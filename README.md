@@ -12,7 +12,7 @@ Dotnet zip packaging example
 `mkdir webapp`  
 `cd webapp`  
 `dotnet new webapp`
-- Create a Folder publish profile like the following
+- Create a Folder publish profile like the following (needed only for MSBuild)
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <!--
@@ -31,16 +31,15 @@ https://go.microsoft.com/fwlink/?LinkID=208121.
   </PropertyGroup>
 </Project>
 ```
-- save the publishing profile on a preferred location, by default you can save it on the `project/Properties/PublishProfiles/FolderProfile.pubxml`
-
-- test that the publishing profile works
-> via msbuild restore the packages first  
+  - save the publishing profile on a preferred location, by default you can save it on the `project/Properties/PublishProfiles/FolderProfile.pubxml`
+  - test that the publishing profile works
+    > via msbuild restore the packages first  
 `MSBuild.exe .\aspdotnet-zip.sln /p:Configuration=Release /p:Platform="Any CPU" -t:restore -p:RestorePackagesConfig=true`  
 then build and pusblish the profile like this
 `MSBuild.exe .\aspdotnet-zip.sln /p:Configuration=Release /p:Platform="Any CPU" /property:DeployOnBuild=True /p:PublishProfile=FolderProfile`
 
 > with dotnet cli tool you can do it like this:
-`dotnet publish -c Release -p:PublishProfile=FolderProfile`
+`dotnet publish -c Release -o release-web`
 
 > please keep in mind that the directory output and contents might change depending on the SDK and MSBuild tools installed, for example MSBuild might output on a different directory than the dotnet sdk, and the sdk might change the files generated depending of the SDK for example SDK 4 is different than SDK 6. 
 
